@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Wallpaper Engine NTE Dynamic Background by hiperesp</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: black;
+    }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+    }
+
+    .videos {
+        width: 100vw;
+        height: 100vh;
+    }
+
+    video {
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+    }
+    #bgVideo-a {
+        z-index: 1;
+    }
+    #bgVideo-b {
+        z-index: 2;
+        opacity: 0;
+    }
+</style>
+</head>
+
+<body>
+
+    <div class="videos">
+        <video id="bgVideo-a" autoplay muted loop playsinline></video>
+        <video id="bgVideo-b" autoplay muted loop playsinline></video>
+    </div>
+
+<script>
+    const transitionTime = 2000;
+
+    const videoAEl = document.getElementById("bgVideo-a");
+    const videoBEl = document.getElementById("bgVideo-b");
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getVideoFile(horarioFloat) {
+        const horarios = [
+            {
+                from: 0,
+                file: "Login2K-yewan.webm"
+            },
+            {
+                from: 6,
+                file: "Login2K-huanghun.webm"
+            },
+            {
+                from: 9,
+                file: "Login2K-baitian.webm"
+            },
+            {
+                from: 17.5,
+                file: "Login2K-huanghun.webm"
+            },
+            {
+                from: 19,
+                file: "Login2K-yewan.webm"
+            }
+        ];
+
+        for(let i=0; i<horarios.length; i++) {
+            const i1 = (i + 1) % horarios.length;
+            const horarioAtual = horarios[i];
+            const horarioProximo = horarios[i1];
+
+            const isValid = horarioAtual.from < horarioProximo.from
+                ? (horarioFloat >= horarioAtual.from && horarioFloat < horarioProximo.from)
+                : horarioFloat >= horarioAtual.from;
+
+            if(isValid) {
+                return {
+                    now: horarioAtual.file,
+                    next: horarioProximo.file
+                };
+            }
+        }
+
+        console.error("Horário inválido: " + horarioFloat);
+
+        return {
+            now: horarios[0].file,
+            next: horarios[0].file
+        };
+    }
+
+    function getUpdatedVideoFile() {
+        const hora = new Date().getHours();
+        const minutos = new Date().getMinutes();
+        const horarioAtual = hora + (minutos / 60);
+
+        return getVideoFile(horarioAtual);
+    }
+
+    async function loop() {
+        const { now, next } = getUpdatedVideoFile();
+        const needTransition = !!videoAEl.dataset.src;
+
+        if(videoAEl.dataset.src !== now) {
+            videoBEl.style.opacity = 1;
+            videoBEl.currentTime = videoAEl.currentTime;
+
+            needTransition && await sleep(transitionTime);
+            videoAEl.src = videoAEl.dataset.src = now;
+            videoAEl.currentTime = videoBEl.currentTime;
+            videoBEl.style.opacity = null;
+
+            needTransition && await sleep(transitionTime);
+            videoBEl.src = videoBEl.dataset.src = next;
+        }
+
+        setTimeout(loop, transitionTime * 2);
+    }
+
+    function setup() {
+        videoBEl.style.transition = `opacity ${transitionTime}ms ease-in-out`;
+
+        setTimeout(loop, 1);
+    }
+
+    setup();
+</script>
+
+</body>
+</html>
